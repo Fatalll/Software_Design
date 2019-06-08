@@ -79,22 +79,26 @@ class CommandWC(ICommand):
     def execute(self, pipe: str, storage: IStorage) -> str:
         result = ""
         if pipe:
-            result += "%d %d %d\n" % (pipe.count('\n') + 1,
-                                      len(pipe.split()),
-                                      len(pipe))
+            result = "%d %d %d\n" % (pipe.count('\n') + 1,
+                                     len(pipe.split()),
+                                     len(pipe))
         else:
             if not self._args:
                 raise RuntimeError("wc: must specify file names!")
 
+            result_list = []
             for filename in self._args:
                 try:
                     with open(filename) as f:
                         data = f.read()
-                        result += "%d %d %d\n" % (data.count('\n') + 1,
-                                                  len(data.split()),
-                                                  len(data))
+                        result_list.append("%d %d %d\n" % (data.count('\n') + 1,
+                                                           len(data.split()),
+                                                           len(data)))
                 except IOError as error:
-                    result += "wc: '%s' No such file or directory\n" % filename
+                    result_list.append("wc: '%s' No such file or directory\n"
+                                       % filename)
+
+            result = ''.join(result_list)
 
         return result[:-1]
 

@@ -46,7 +46,7 @@ class ICommandInterpreter(metaclass=ABCMeta):
 class CommandInterpreterWithStorage(ICommandInterpreter):
     """ Реализация парсера команд из потока токенов """
 
-    def __init__(self, storage: IStorage, commands: List,
+    def __init__(self, storage: IStorage, commands: List[Type[ICommand]],
                  delimiter: Type[IToken], default: Type[ICommand]):
         super().__init__(commands, delimiter, default)
         self.__storage = storage
