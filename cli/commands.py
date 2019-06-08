@@ -44,16 +44,16 @@ class CommandCat(ICommand):
         return "cat"
 
     def execute(self, pipe: str, storage: IStorage) -> str:
-        if not self._args:
-            raise RuntimeError("cat: must specify file names!")
-
         result = ""
-        for filename in self._args:
-            try:
-                with open(filename) as f:
-                    result += f.read() + '\n'
-            except IOError as error:
-                result += "cat: '%s' No such file or directory\n" % filename
+        if not self._args:
+            result += pipe + '\n'
+        else:
+            for filename in self._args:
+                try:
+                    with open(filename) as f:
+                        result += f.read() + '\n'
+                except IOError as error:
+                    result += "cat: '%s' No such file or directory\n" % filename
 
         return result[:-1]
 
