@@ -144,6 +144,19 @@ class CommandGrep(ICommand):
     def name() -> str:
         return "grep"
 
+    @staticmethod
+    def read_from_file(files) -> (str, str):
+        pipe = ""
+        result = ""
+        for filename in files:
+            try:
+                with open(filename, encoding="utf8") as f:
+                    pipe += f.read() + '\n'
+            except IOError as error:
+                result += "grep: '%s' No such file or directory\n" % filename
+
+        return result, pipe
+
     def execute(self, pipe: str, storage: IStorage) -> str:
         parser = argparse.ArgumentParser(
             description='Search for PATTERN in each FILE')
@@ -164,17 +177,16 @@ class CommandGrep(ICommand):
             pattern = args.PATTERN
             result = ""
 
+            if args.after_context and args.after_context < 1:
+                raise argparse.ArgumentTypeError(
+                    "lines NUM after context must be a positive integer")
+
             if args.word_regexp:
                 pattern = r"\b" + pattern + r"\b"
 
             if args.FILE:
-                pipe = ""
-                for filename in args.FILE:
-                    try:
-                        with open(filename, encoding="utf8") as f:
-                            pipe += f.read() + '\n'
-                    except IOError as error:
-                        result += "grep: '%s' No such file or directory\n" % filename
+                res, pipe = self.read_from_file(args.FILE)
+                result += res
 
             after_lines_count = 0
             for line in pipe.splitlines(True):
