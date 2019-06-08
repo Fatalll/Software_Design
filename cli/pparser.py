@@ -39,9 +39,7 @@ class Parser(IParser):
 
                 # удаляем группы из регулярного выражения, чтобы не было
                 # лишней информации в подвыражениях
-                split_by = re.sub(r'(?<!\\)(\(|\))', '',
-                                  token_class.regexp())
-                tokens_not_of_type = re.split(split_by, expr)
+                tokens_not_of_type = re.split(token_class.split_regexp(), expr)
 
                 for not_token, token in itertools.zip_longest(
                         tokens_not_of_type,

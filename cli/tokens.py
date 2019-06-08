@@ -4,6 +4,7 @@
 
 from abc import ABCMeta, abstractmethod
 from storage import IStorage
+from evaluator import IEvaluator
 
 
 class IToken(metaclass=ABCMeta):
@@ -28,6 +29,13 @@ class IToken(metaclass=ABCMeta):
             результат поиска вернется в метод __init__ """
         pass
 
+    @staticmethod
+    @abstractmethod
+    def split_regexp() -> str:
+        """ Регулярное выражение для splitа выражения,
+            должно быть без групп """
+        pass
+
     @abstractmethod
     def set_value(self, value: str) -> None:
         """ Установка значения токена """
@@ -39,7 +47,7 @@ class IToken(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def eval_vars(self, storage: IStorage) -> None:
+    def eval_vars(self, evaluator: IEvaluator) -> None:
         """ Замена переменных окружения на их значения,
             если это необходимо """
         pass
@@ -64,11 +72,15 @@ class TokenInSingleQuotes(IToken):
 
     @staticmethod
     def priority() -> int:
-        return 16
+        return 32
 
     @staticmethod
     def regexp() -> str:
         return '[\']([^\']*)[\']'
+
+    @staticmethod
+    def split_regexp() -> str:
+        return '[\'][^\']*[\']'
 
     def set_value(self, value: str) -> None:
         self.__value = value
@@ -76,7 +88,7 @@ class TokenInSingleQuotes(IToken):
     def get_value(self) -> str:
         return self.__value
 
-    def eval_vars(self, storage: IStorage) -> None:
+    def eval_vars(self, evaluator: IEvaluator) -> None:
         pass
 
     def is_possibly_command(self) -> bool:
@@ -91,11 +103,15 @@ class TokenInDoubleQuotes(IToken):
 
     @staticmethod
     def priority() -> int:
-        return 32
+        return 16
 
     @staticmethod
     def regexp() -> str:
-        return '[\"]([^\"]*)[\"]'
+        return '\"([^\"]*)\"(?=(?:[^\']*\'[^\']*\')*[^\']*$)'
+
+    @staticmethod
+    def split_regexp() -> str:
+        return '\"[^\"]*\"(?=(?:[^\']*\'[^\']*\')*[^\']*$)'
 
     def set_value(self, value: str) -> None:
         self.__value = value
@@ -103,8 +119,8 @@ class TokenInDoubleQuotes(IToken):
     def get_value(self) -> str:
         return self.__value
 
-    def eval_vars(self, storage: IStorage) -> None:
-        self.set_value(storage.evaluate_variables(self.get_value()))
+    def eval_vars(self, evaluator: IEvaluator) -> None:
+        self.set_value(evaluator.evaluate_variables(self.get_value()))
 
     def is_possibly_command(self) -> bool:
         return True
@@ -124,13 +140,17 @@ class TokenPipe(IToken):
     def regexp() -> str:
         return '\\|'
 
+    @staticmethod
+    def split_regexp() -> str:
+        return '\\|'
+
     def set_value(self, value: str) -> None:
         pass
 
     def get_value(self) -> str:
         return '|'
 
-    def eval_vars(self, storage: IStorage) -> None:
+    def eval_vars(self, evaluator: IEvaluator) -> None:
         pass
 
     def is_possibly_command(self) -> bool:
@@ -152,6 +172,10 @@ class TokenAssignment(IToken):
     def regexp() -> str:
         return '([^ =]+)=([^ ]*)'
 
+    @staticmethod
+    def split_regexp() -> str:
+        return '[^ =]+=[^ ]*'
+
     def set_value(self, value: str) -> None:
         buffer = value.split('=')
         if len(buffer) == 2:
@@ -163,9 +187,9 @@ class TokenAssignment(IToken):
     def get_value(self) -> str:
         return self.__var + '=' + self.__val
 
-    def eval_vars(self, storage: IStorage) -> None:
-        self.__val = storage.evaluate_variables(self.__val)
-        self.__var = storage.evaluate_variables(self.__var)
+    def eval_vars(self, evaluator: IEvaluator) -> None:
+        self.__val = evaluator.evaluate_variables(self.__val)
+        self.__var = evaluator.evaluate_variables(self.__var)
 
     def is_possibly_command(self) -> bool:
         return True
@@ -191,14 +215,18 @@ class TokenWord(IToken):
     def regexp() -> str:
         return '[^ \'\"|]+'
 
+    @staticmethod
+    def split_regexp() -> str:
+        return '[^ \'\"|]+'
+
     def set_value(self, value: str) -> None:
         self.__value = value
 
     def get_value(self) -> str:
         return self.__value
 
-    def eval_vars(self, storage: IStorage) -> None:
-        self.set_value(storage.evaluate_variables(self.get_value()))
+    def eval_vars(self, evaluator: IEvaluator) -> None:
+        self.set_value(evaluator.evaluate_variables(self.get_value()))
 
     def is_possibly_command(self) -> bool:
         return True

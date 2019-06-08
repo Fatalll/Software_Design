@@ -6,7 +6,7 @@ from abc import ABCMeta, abstractmethod
 from typing import List, Type, Iterator, Generator
 from tokens import IToken
 from commands import ICommand
-from storage import IStorage
+from evaluator import IEvaluator
 
 
 class ICommandInterpreter(metaclass=ABCMeta):
@@ -46,23 +46,23 @@ class ICommandInterpreter(metaclass=ABCMeta):
 class CommandInterpreterWithStorage(ICommandInterpreter):
     """ Реализация парсера команд из потока токенов """
 
-    def __init__(self, storage: IStorage, commands: List[Type[ICommand]],
+    def __init__(self, evaluator: IEvaluator, commands: List[Type[ICommand]],
                  delimiter: Type[IToken], default: Type[ICommand]):
         super().__init__(commands, delimiter, default)
-        self.__storage = storage
+        self.__evaluator = evaluator
 
     def retrieve_commands(self, tokens: Iterator[IToken]) -> \
             Generator[ICommand, None, None]:
         token = next(tokens, None)
 
         if not token:
-            raise StopIteration()
+            return
 
         if not token.is_possibly_command():
             raise RuntimeError("Unexpected token: " + token.get_value())
         else:
-            token.eval_vars(self.__storage)
-            if token.execute(self.__storage):
+            token.eval_vars(self.__evaluator)
+            if token.execute(self.__evaluator.get_storage()):
                 args = []
                 if self.retrieve_command(token.get_value()) \
                         == self.default_command():
@@ -70,7 +70,7 @@ class CommandInterpreterWithStorage(ICommandInterpreter):
 
                 for arg_token in tokens:
                     if arg_token.__class__ != self.delimiter():
-                        arg_token.eval_vars(self.__storage)
+                        arg_token.eval_vars(self.__evaluator)
                         args.append(arg_token.get_value())
                     else:
                         yield self.retrieve_command(token.get_value())(args)

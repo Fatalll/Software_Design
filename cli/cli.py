@@ -17,6 +17,7 @@ from tokens import TokenInSingleQuotes, TokenInDoubleQuotes, TokenPipe, \
 from interpreter import CommandInterpreterWithStorage
 from pparser import Parser
 from executor import Executor
+from evaluator import Evaluator
 
 
 def main_loop():
@@ -27,15 +28,16 @@ def main_loop():
     if os.name == 'nt':  # установка кодировки utf-8 для windows
         run(['chcp', '65001'], stdout=PIPE, shell=True)
 
-    storage = Storage(r'\$[^ \'\"$]+')
+    storage = Storage()
+    evaluator = Evaluator(storage, r'\$[^ \'\"$]+')
     commands = [CommandCat, CommandEcho, CommandWC,
                 CommandPwd, CommandExit]
     token_types = [TokenInSingleQuotes, TokenInDoubleQuotes, TokenPipe,
                    TokenAssignment, TokenWord]
 
     executor = Executor(CommandInterpreterWithStorage
-                        (storage, commands, TokenPipe, CommandDefault),
-                        Parser(token_types), storage)
+                        (evaluator, commands, TokenPipe, CommandDefault),
+                        Parser(token_types), evaluator)
 
     while True:
         try:
