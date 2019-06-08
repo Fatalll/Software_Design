@@ -1,7 +1,7 @@
 """
     Модуль с командами с которыми работает интерпретатор
 """
-
+import os
 from abc import ABCMeta, abstractmethod
 from typing import List
 from subprocess import run, PIPE
